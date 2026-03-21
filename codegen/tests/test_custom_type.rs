@@ -56,3 +56,40 @@ fn test() {
         42
     );
 }
+
+mod container {
+    // Rename rhai to oldrhai
+    extern crate rhai as oldrhai;
+
+    #[test]
+    fn custom_root_test() {
+        #[derive(Clone, oldrhai::CustomType)]
+        #[rhai_type(name = "MyBar", extra = Self::build_extra, root=oldrhai)]
+        pub struct Bar(
+            #[rhai_type(skip)] f32,
+            u32,
+            #[rhai_type(name = "boo", readonly)] String,
+            Vec<u32>,
+        );
+
+        impl Bar {
+            fn build_extra(builder: &mut oldrhai::TypeBuilder<Self>) {
+                builder.with_fn("new_int", || 42);
+            }
+        }
+
+        let mut engine = oldrhai::Engine::new();
+        engine.build_type::<Bar>();
+
+        assert_eq!(
+            engine
+                .eval::<i32>(
+                    "
+                        new_int()
+                    "
+                )
+                .unwrap(),
+            42
+        );
+    }
+}
